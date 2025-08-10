@@ -9,7 +9,6 @@ const brightnessValue = document.getElementById('brightnessValue');
 
 const daysID = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 const monthsID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-const WA_LINK = 'https://chat.whatsapp.com/KnxTC4uGQdGI6WAAVh0UGg?mode=ac_t';
 
 function formatTimestamp(date){
   return `${daysID[date.getDay()]} ${date.getDate()} ${monthsID[date.getMonth()]} ${date.getFullYear()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}:${String(date.getSeconds()).padStart(2,'0')}`;
@@ -72,7 +71,7 @@ video.addEventListener('loadedmetadata', () => {
   drawGrid();
 });
 
-// Tangkap foto
+// Tangkap foto & share
 captureBtn.addEventListener('click', async ()=>{
   const vw = video.videoWidth;
   const vh = video.videoHeight;
@@ -96,34 +95,34 @@ captureBtn.addEventListener('click', async ()=>{
   ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, finalW, finalH);
   ctx.filter = "none";
 
-  // Stempel teks dengan outline
+  // Stempel waktu di tengah bawah
   const stamp = formatTimestamp(new Date());
-  const ocsText = "OCS NFI";
-  const fontSize = Math.floor(finalW * 0.04);
+  const fontSize = Math.floor(finalW * 0.045);
 
   ctx.font = `${fontSize}px sans-serif`;
+  ctx.textAlign = 'center';
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#000';
   ctx.fillStyle = '#00ff00';
 
-  ctx.strokeText(ocsText, 15, finalH - (fontSize*2) - 10);
-  ctx.fillText(ocsText, 15, finalH - (fontSize*2) - 10);
-
-  ctx.strokeText(stamp, 15, finalH - 10);
-  ctx.fillText(stamp, 15, finalH - 10);
+  ctx.strokeText(stamp, finalW / 2, finalH - 15);
+  ctx.fillText(stamp, finalW / 2, finalH - 15);
 
   try {
     const blob = await new Promise(res=>canvas.toBlob(res,'image/png'));
-    if (navigator.clipboard && navigator.clipboard.write) {
-      const item = new ClipboardItem({'image/png': blob});
-      await navigator.clipboard.write([item]);
+    const file = new File([blob], 'foto-3x4.png', { type: 'image/png' });
+
+    // Gunakan Web Share API
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: 'Foto 3x4',
+        text: 'Hasil foto 3x4'
+      });
+    } else {
+      alert('Fitur share tidak didukung di browser ini. Gunakan Chrome/Edge/Firefox di HP.');
     }
-  } catch(e) { console.warn('Gagal salin gambar', e); }
-
-  try {
-    await navigator.clipboard.writeText(stamp);
-  } catch(e) { console.warn('Gagal salin teks', e); }
-
-  window.open(WA_LINK,'_blank');
+  } catch(e) {
+    console.warn('Gagal share foto', e);
+  }
 });
-
